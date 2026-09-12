@@ -362,6 +362,70 @@ section.panel.active{display:block;}
 .note-acc-row .track{flex:1;height:8px;border-radius:4px;background:var(--border);overflow:hidden;}
 .note-acc-row .fill{height:100%;border-radius:4px;}
 .note-acc-row .pct{width:38px;text-align:right;flex:none;}
+.note-acc-row.wide .nm{width:auto;min-width:70px;}
+
+.focus-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.focus-chip{
+  background:var(--bad-soft);
+  border:1px solid var(--bad);
+  border-radius:12px;
+  padding:10px 14px;
+  min-width:120px;
+}
+.focus-chip .fc-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:700;
+  font-size:14px;
+  color:var(--bad);
+}
+.focus-chip .fc-detail{
+  font-size:11px;
+  color:var(--ink-dim);
+  margin-top:2px;
+}
+.focus-empty{
+  font-size:12.5px;
+  color:var(--ink-dim);
+  font-family:'IBM Plex Mono',monospace;
+}
+
+.mistake-feed{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  background:var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.mistake-row{
+  background:var(--surface);
+  padding:10px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:12px;
+  font-size:12.5px;
+}
+.mistake-row .mr-desc{color:var(--ink);}
+.mistake-row .mr-desc .bad-part{color:var(--bad);font-weight:600;}
+.mistake-row .mr-time{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--ink-dim);
+  white-space:nowrap;
+  flex:none;
+}
+.mistake-empty{
+  font-size:12.5px;
+  color:var(--ink-dim);
+  font-family:'IBM Plex Mono',monospace;
+  padding:14px 2px;
+}
 
 .settings-row{
   display:flex;justify-content:space-between;align-items:center;
@@ -466,15 +530,39 @@ section.panel.active{display:block;}
   <section class="panel" id="panel-stats">
     <div class="stat-grid" id="statTiles"></div>
 
+    <div class="section-title">Focus areas</div>
+    <p class="subnote">Your lowest-accuracy notes and intervals right now, with enough attempts to be meaningful.</p>
+    <div class="focus-row" id="focusRow"></div>
+
     <div class="section-title">Accuracy, last 14 active days</div>
     <div class="trend-wrap"><svg id="trendSvg" width="100%" height="120"></svg></div>
+
+    <div class="section-title">What kind of mistake</div>
+    <p class="subnote">In Notes mode, a miss is either the note, the octave, or both — these draw on different listening skills, so it's worth knowing which one is holding you back.</p>
+    <div class="trend-wrap" id="errorBreakdown"></div>
+
+    <div class="section-title">Octave guessing bias</div>
+    <p class="subnote">How far off your octave guess was from the actual one, on your mistakes. A lopsided chart (not centered on 0) means you're systematically guessing too high or too low.</p>
+    <div class="trend-wrap"><svg id="octaveBiasSvg" width="100%" height="120"></svg></div>
+    <p class="subnote" id="octaveBiasInsight" style="margin-top:8px;"></p>
 
     <div class="section-title">Note confusion matrix</div>
     <p class="subnote">Rows are the note that played, columns are what you guessed. Darker off-diagonal cells are your mix-ups.</p>
     <div class="matrix-wrap"><svg id="matrixSvg"></svg></div>
 
+    <div class="section-title">Interval confusion matrix</div>
+    <p class="subnote">Same idea, for intervals — which one you hear gets mistaken for which.</p>
+    <div class="matrix-wrap"><svg id="intMatrixSvg"></svg></div>
+
     <div class="section-title">Per-note accuracy</div>
     <div class="note-acc-list" id="noteAccList"></div>
+
+    <div class="section-title">Per-interval accuracy</div>
+    <div class="note-acc-list" id="intAccList"></div>
+
+    <div class="section-title">Recent mistakes</div>
+    <p class="subnote">Your last wrong answers, most recent first.</p>
+    <div class="mistake-feed" id="mistakeFeed"></div>
   </section>
 
   <section class="panel" id="panel-settings">
@@ -517,6 +605,8 @@ section.panel.active{display:block;}
 
   var MAX_OCTAVE_RANGE = 3;
 
+  var MISTAKE_LOG_CAP = 300;
+
   function defaultState(){
     return {
       version:1,
@@ -524,12 +614,32 @@ section.panel.active{display:block;}
       intervalMode:{ unlocked: INTERVAL_ORDER.slice(0,2), stats:{} },
       sessions:{},
       totals:{attempts:0, correct:0},
+      mistakeLog:[],
       updatedAt:0
     };
   }
 
   var state = defaultState();
   var storageMode = "checking";
+
+  function logMistake(entry){
+    entry.ts = Date.now();
+    state.mistakeLog.push(entry);
+    if(state.mistakeLog.length > MISTAKE_LOG_CAP){
+      state.mistakeLog.splice(0, state.mistakeLog.length - MISTAKE_LOG_CAP);
+    }
+  }
+
+  function timeAgo(ts){
+    var s = Math.max(0, Math.round((Date.now()-ts)/1000));
+    if(s<60) return "just now";
+    var m = Math.round(s/60);
+    if(m<60) return m+"m ago";
+    var h = Math.round(m/60);
+    if(h<24) return h+"h ago";
+    var d = Math.round(h/24);
+    return d+"d ago";
+  }
 
   function ensureNoteStat(note){
     var s = state.noteMode.stats;
@@ -631,6 +741,7 @@ section.panel.active{display:block;}
   var lastNoteFreqs = null;
   var selectedOctave = null;
   var selectedNote = null;
+  var noteRoundStartTs = 0;
 
   var notePlayBtn = document.getElementById("notePlayBtn");
   var noteButtonsEl = document.getElementById("noteButtons");
@@ -714,6 +825,7 @@ section.panel.active{display:block;}
     var range = state.noteMode.octaveRange; // widens as notes get mastered — starts at ±1 octave
     var octaveOffset = Math.floor(Math.random()*(2*range+1)) - range;
     noteRound = {target: target, octaveOffset: octaveOffset, range: range};
+    noteRoundStartTs = Date.now();
     var freq = freqFor(SEMITONE[target] + 12*octaveOffset);
     if(state.noteMode.anchorOn){
       tone(freqFor(0), 0, 0.75);
@@ -754,6 +866,16 @@ section.panel.active{display:block;}
     state.totals.attempts++;
     if(correct) state.totals.correct++;
     bumpSession(correct);
+    if(!correct){
+      logMistake({
+        mode:"note",
+        target: target, targetOctave: actualOctave,
+        guess: guess, guessOctave: guessedOctave,
+        noteWrong: !noteCorrect, octaveWrong: !octaveCorrect,
+        anchorOn: state.noteMode.anchorOn,
+        responseMs: Date.now() - noteRoundStartTs
+      });
+    }
 
     Array.prototype.forEach.call(noteButtonsEl.children, function(b){
       if(b.dataset.note === guess) b.classList.add(correct?"correct":"wrong");
@@ -817,6 +939,7 @@ section.panel.active{display:block;}
   var intRound = null;
   var intAnswered = false;
   var lastIntFreqs = null;
+  var intRoundStartTs = 0;
 
   var intPlayBtn = document.getElementById("intPlayBtn");
   var intButtonsEl = document.getElementById("intButtons");
@@ -851,6 +974,7 @@ section.panel.active{display:block;}
     var targetFreq = freqFor(rootSemi + INTERVAL_INFO[target].semi);
     intRound = {target: target};
     intAnswered = false;
+    intRoundStartTs = Date.now();
     intButtonsEl.classList.remove("locked","idle");
     setIntPlayIcon(false);
     intFeedbackEl.textContent = "";
@@ -881,6 +1005,13 @@ section.panel.active{display:block;}
     state.totals.attempts++;
     if(correct) state.totals.correct++;
     bumpSession(correct);
+    if(!correct){
+      logMistake({
+        mode:"interval",
+        target: target, guess: guess,
+        responseMs: Date.now() - intRoundStartTs
+      });
+    }
 
     Array.prototype.forEach.call(intButtonsEl.children, function(b){
       if(b.dataset.iv === guess) b.classList.add(correct?"correct":"wrong");
@@ -980,33 +1111,32 @@ section.panel.active{display:block;}
     svg.innerHTML = parts.join("");
   }
 
-  function renderMatrix(){
-    var notes = state.noteMode.unlocked;
-    var svg = document.getElementById("matrixSvg");
+  function renderConfusionMatrix(svgId, items, labelFn, statGetter, emptyMsg){
+    var svg = document.getElementById(svgId);
     var cell = 34, labelW = 46, labelH = 26;
-    var size = notes.length;
+    var size = items.length;
     var w = labelW + size*cell + 10;
     var h = labelH + size*cell + 10;
     svg.setAttribute("viewBox","0 0 "+w+" "+h);
     svg.setAttribute("width", w);
     svg.setAttribute("height", h);
     if(size < 2){
-      svg.innerHTML = '<text x="10" y="30" fill="var(--ink-dim)" font-family="IBM Plex Mono" font-size="12">Unlock a second note to see confusions.</text>';
+      svg.innerHTML = '<text x="10" y="30" fill="var(--ink-dim)" font-family="IBM Plex Mono" font-size="12">'+emptyMsg+'</text>';
       return;
     }
     var max = 1;
-    notes.forEach(function(n){
-      var st = ensureNoteStat(n);
-      notes.forEach(function(g){ max = Math.max(max, st.confusions[g]||0); });
+    items.forEach(function(n){
+      var st = statGetter(n);
+      items.forEach(function(g){ max = Math.max(max, st.confusions[g]||0); });
     });
     var parts = [];
-    notes.forEach(function(g,i){
-      parts.push('<text x="'+(labelW+i*cell+cell/2)+'" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--ink-dim)">'+NOTE_LABEL[g]+'</text>');
+    items.forEach(function(g,i){
+      parts.push('<text x="'+(labelW+i*cell+cell/2)+'" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--ink-dim)">'+labelFn(g)+'</text>');
     });
-    notes.forEach(function(actual,row){
-      parts.push('<text x="'+(labelW-8)+'" y="'+(labelH+row*cell+cell/2+4)+'" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="var(--ink-dim)">'+NOTE_LABEL[actual]+'</text>');
-      var st = ensureNoteStat(actual);
-      notes.forEach(function(guess,col){
+    items.forEach(function(actual,row){
+      parts.push('<text x="'+(labelW-8)+'" y="'+(labelH+row*cell+cell/2+4)+'" text-anchor="end" font-family="IBM Plex Mono" font-size="10" fill="var(--ink-dim)">'+labelFn(actual)+'</text>');
+      var st = statGetter(actual);
+      items.forEach(function(guess,col){
         var v = st.confusions[guess]||0;
         var isDiag = guess===actual;
         var alpha = v ? (0.12 + 0.78*(v/max)) : 0.05;
@@ -1019,24 +1149,146 @@ section.panel.active{display:block;}
     svg.innerHTML = parts.join("");
   }
 
-  function renderNoteAccList(){
-    var el = document.getElementById("noteAccList");
-    var notes = state.noteMode.unlocked;
-    if(!notes.length){ el.innerHTML=""; return; }
-    el.innerHTML = notes.map(function(n){
-      var st = ensureNoteStat(n);
+  function renderAccList(elId, items, labelFn, statGetter){
+    var el = document.getElementById(elId);
+    if(!items.length){ el.innerHTML=""; return; }
+    el.innerHTML = items.map(function(n){
+      var st = statGetter(n);
       var a = recentAcc(st);
       var pctv = a===null ? 0 : a;
       var color = pctv>=0.8 ? "var(--good)" : (pctv>=0.5 ? "var(--accent)" : "var(--bad)");
-      return '<div class="note-acc-row"><span class="nm">'+NOTE_LABEL[n]+'</span><div class="track"><div class="fill" style="width:'+(pctv*100)+'%;background:'+color+'"></div></div><span class="pct">'+(a===null?"—":Math.round(a*100)+"%")+'</span></div>';
+      return '<div class="note-acc-row wide"><span class="nm">'+labelFn(n)+'</span><div class="track"><div class="fill" style="width:'+(pctv*100)+'%;background:'+color+'"></div></div><span class="pct">'+(a===null?"—":Math.round(a*100)+"%")+'</span></div>';
+    }).join("");
+  }
+
+  function renderFocusRow(){
+    var items = [];
+    state.noteMode.unlocked.forEach(function(n){
+      var st = ensureNoteStat(n);
+      if(st.attempts>=4){
+        var a = recentAcc(st);
+        if(a!==null) items.push({label: NOTE_LABEL[n], kind:"note", acc:a, attempts: st.attempts});
+      }
+    });
+    state.intervalMode.unlocked.forEach(function(iv){
+      var st = ensureIntStat(iv);
+      if(st.attempts>=4){
+        var a = recentAcc(st);
+        if(a!==null) items.push({label: INTERVAL_INFO[iv].name, kind:"interval", acc:a, attempts: st.attempts});
+      }
+    });
+    items.sort(function(a,b){ return a.acc-b.acc; });
+    var weakest = items.slice(0,3).filter(function(it){ return it.acc<0.85; });
+    var el = document.getElementById("focusRow");
+    if(!weakest.length){
+      el.innerHTML = '<div class="focus-empty">Not enough data yet, or nothing below 85% — keep going.</div>';
+      return;
+    }
+    el.innerHTML = weakest.map(function(it){
+      return '<div class="focus-chip"><div class="fc-label">'+it.label+'</div><div class="fc-detail">'+Math.round(it.acc*100)+'% over last '+Math.min(it.attempts,20)+' · '+(it.kind==="note"?"note":"interval")+'</div></div>';
+    }).join("");
+  }
+
+  function renderErrorBreakdown(){
+    var el = document.getElementById("errorBreakdown");
+    var mistakes = state.mistakeLog.filter(function(m){ return m.mode==="note"; });
+    if(!mistakes.length){
+      el.innerHTML = '<div class="mistake-empty">No note-mode mistakes logged yet.</div>';
+      return;
+    }
+    var noteOnly=0, octaveOnly=0, both=0;
+    mistakes.forEach(function(m){
+      if(m.noteWrong && m.octaveWrong) both++;
+      else if(m.noteWrong) noteOnly++;
+      else if(m.octaveWrong) octaveOnly++;
+    });
+    var total = mistakes.length;
+    var rows = [
+      {label:"Note only", n:noteOnly},
+      {label:"Octave only", n:octaveOnly},
+      {label:"Both", n:both}
+    ];
+    el.innerHTML = '<div class="note-acc-list">' + rows.map(function(r){
+      var frac = total ? r.n/total : 0;
+      return '<div class="note-acc-row wide"><span class="nm">'+r.label+'</span><div class="track"><div class="fill" style="width:'+(frac*100)+'%;background:var(--accent)"></div></div><span class="pct">'+r.n+'</span></div>';
+    }).join("") + '</div>';
+  }
+
+  function renderOctaveBias(){
+    var svg = document.getElementById("octaveBiasSvg");
+    var insightEl = document.getElementById("octaveBiasInsight");
+    var mistakes = state.mistakeLog.filter(function(m){ return m.mode==="note" && m.guessOctave!==null && m.guessOctave!==undefined; });
+    if(!mistakes.length){
+      svg.setAttribute("viewBox","0 0 320 120");
+      svg.innerHTML = '<text x="10" y="60" fill="var(--ink-dim)" font-family="IBM Plex Mono" font-size="12">No octave mistakes logged yet.</text>';
+      insightEl.textContent = "";
+      return;
+    }
+    var diffs = mistakes.map(function(m){ return m.guessOctave - m.targetOctave; });
+    var maxAbs = Math.max(1, Math.max.apply(null, diffs.map(Math.abs)));
+    var counts = {};
+    for(var i=-maxAbs;i<=maxAbs;i++) counts[i]=0;
+    diffs.forEach(function(d){ counts[d] = (counts[d]||0)+1; });
+    var keys = Object.keys(counts).map(Number).sort(function(a,b){return a-b;});
+    var barW = 26;
+    var w = Math.max(320, keys.length*40);
+    var h = 120;
+    var baseY = h-22, maxH = 70;
+    var maxCount = Math.max.apply(null, keys.map(function(k){return counts[k];}));
+    var gap = (w - keys.length*barW) / (keys.length+1);
+    var parts = [];
+    keys.forEach(function(k,i){
+      var c = counts[k];
+      var x = gap + i*(barW+gap);
+      var barH = maxCount ? Math.max(3, (c/maxCount)*maxH) : 3;
+      var color = k===0 ? "var(--good)" : "var(--bad)";
+      parts.push('<rect x="'+x+'" y="'+(baseY-barH)+'" width="'+barW+'" height="'+barH+'" rx="3" fill="'+color+'" opacity="'+(k===0?1:0.7)+'"></rect>');
+      parts.push('<text x="'+(x+barW/2)+'" y="'+(baseY+14)+'" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--ink-dim)">'+(k>0?"+"+k:k)+'</text>');
+      if(c) parts.push('<text x="'+(x+barW/2)+'" y="'+(baseY-barH-4)+'" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">'+c+'</text>');
+    });
+    svg.setAttribute("viewBox","0 0 "+w+" "+h);
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    svg.innerHTML = parts.join("");
+
+    var mean = diffs.reduce(function(a,b){return a+b;},0)/diffs.length;
+    if(diffs.length>=5 && Math.abs(mean)>=0.5){
+      insightEl.textContent = "On these mistakes, your octave guess averages " + (mean>0?"+":"") + mean.toFixed(1) +
+        " — you tend to guess " + (mean>0?"too high":"too low") + " when unsure.";
+    } else {
+      insightEl.textContent = "No strong bias yet — your octave misses look roughly balanced.";
+    }
+  }
+
+  function renderMistakeFeed(){
+    var el = document.getElementById("mistakeFeed");
+    var recent = state.mistakeLog.slice(-20).reverse();
+    if(!recent.length){
+      el.innerHTML = '<div class="mistake-empty">No mistakes yet — nice.</div>';
+      return;
+    }
+    el.innerHTML = recent.map(function(m){
+      var desc;
+      if(m.mode==="note"){
+        desc = NOTE_LABEL[m.target]+' in '+octaveDesc(m.targetOctave)+' — you said <span class="bad-part">'+NOTE_LABEL[m.guess]+' in '+octaveDesc(m.guessOctave)+'</span>';
+      } else {
+        desc = INTERVAL_INFO[m.target].name+' — you said <span class="bad-part">'+INTERVAL_INFO[m.guess].name+'</span>';
+      }
+      return '<div class="mistake-row"><span class="mr-desc">'+desc+'</span><span class="mr-time">'+timeAgo(m.ts)+'</span></div>';
     }).join("");
   }
 
   function renderStats(){
     renderStatTiles();
+    renderFocusRow();
     renderTrend();
-    renderMatrix();
-    renderNoteAccList();
+    renderErrorBreakdown();
+    renderOctaveBias();
+    renderConfusionMatrix("matrixSvg", state.noteMode.unlocked, function(n){return NOTE_LABEL[n];}, ensureNoteStat, "Unlock a second note to see confusions.");
+    renderConfusionMatrix("intMatrixSvg", state.intervalMode.unlocked, function(iv){return iv;}, ensureIntStat, "Unlock a second interval to see confusions.");
+    renderAccList("noteAccList", state.noteMode.unlocked, function(n){return NOTE_LABEL[n];}, ensureNoteStat);
+    renderAccList("intAccList", state.intervalMode.unlocked, function(iv){return INTERVAL_INFO[iv].name;}, ensureIntStat);
+    renderMistakeFeed();
   }
 
   // ---------- Persistence (browser-local, since this is a standalone file) ----------
