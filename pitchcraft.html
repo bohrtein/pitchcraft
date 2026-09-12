@@ -247,6 +247,10 @@ section.panel.active{display:block;}
   transition:background .1s, border-color .1s;
 }
 .note-btn:hover:not(:disabled){border-color:var(--accent);}
+.note-btn.selected{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px var(--accent-soft) inset;
+}
 .note-btn:disabled{
   cursor:default;
   color:var(--lock);
@@ -625,7 +629,8 @@ section.panel.active{display:block;}
   var noteRound = null; // {target}
   var noteAnswered = false;
   var lastNoteFreqs = null;
-  var selectedOctave = 0;
+  var selectedOctave = null;
+  var selectedNote = null;
 
   var notePlayBtn = document.getElementById("notePlayBtn");
   var noteButtonsEl = document.getElementById("noteButtons");
@@ -650,9 +655,18 @@ section.panel.active{display:block;}
         btn.disabled = true;
         btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>' + NOTE_LABEL[note];
       }
-      btn.addEventListener("click", function(){ onNoteGuess(note); });
+      btn.addEventListener("click", function(){ onNoteSelect(note); });
       noteButtonsEl.appendChild(btn);
     });
+  }
+
+  function onNoteSelect(note){
+    if(!noteRound || noteAnswered){ playNoteRound(); return; }
+    selectedNote = note;
+    Array.prototype.forEach.call(noteButtonsEl.children, function(b){ b.classList.remove("selected"); });
+    var btn = Array.prototype.filter.call(noteButtonsEl.children, function(b){ return b.dataset.note === note; })[0];
+    if(btn) btn.classList.add("selected");
+    trySubmitNoteRound();
   }
 
   function octaveDesc(off){
@@ -671,9 +685,11 @@ section.panel.active{display:block;}
         btn.dataset.off = off;
         btn.textContent = off===0 ? "0" : (off>0?"+"+off:String(off));
         btn.addEventListener("click", function(){
+          if(!noteRound || noteAnswered){ playNoteRound(); return; }
           selectedOctave = off;
           Array.prototype.forEach.call(noteOctaveButtonsEl.children, function(b){ b.classList.remove("selected"); });
           btn.classList.add("selected");
+          trySubmitNoteRound();
         });
         noteOctaveButtonsEl.appendChild(btn);
       })(i);
@@ -690,8 +706,9 @@ section.panel.active{display:block;}
     noteFeedbackEl.textContent = "";
     noteFeedbackEl.className = "feedback";
     noteUnlockToast.textContent = "";
+    selectedNote = null;
     Array.prototype.forEach.call(noteButtonsEl.children, function(b){
-      b.classList.remove("correct","wrong","reveal");
+      b.classList.remove("correct","wrong","reveal","selected");
     });
     buildOctaveButtons();
     var range = state.noteMode.octaveRange; // widens as notes get mastered — starts at ±1 octave
@@ -715,11 +732,17 @@ section.panel.active{display:block;}
     lastNoteFreqs.forEach(function(t){ tone(t.f, t.d, t.dur); });
   }
 
-  function onNoteGuess(guess){
-    if(!noteRound || noteAnswered){ playNoteRound(); return; }
+  function trySubmitNoteRound(){
+    if(!noteRound || noteAnswered) return;
+    if(selectedNote===null || selectedOctave===null) return;
+    gradeNoteRound();
+  }
+
+  function gradeNoteRound(){
     noteAnswered = true;
     noteButtonsEl.classList.add("locked");
     noteOctaveButtonsEl.classList.add("locked");
+    var guess = selectedNote;
     var target = noteRound.target;
     var actualOctave = noteRound.octaveOffset;
     var guessedOctave = selectedOctave;
