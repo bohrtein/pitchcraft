@@ -267,6 +267,43 @@ section.panel.active{display:block;}
 .feedback.good{color:var(--good);}
 .feedback.bad{color:var(--bad);}
 
+.octave-indicator{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  margin-top:4px;
+}
+.octave-ruler{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.octave-tick{
+  width:26px;height:26px;
+  border-radius:7px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  color:var(--ink-dim);
+  position:relative;
+}
+.octave-tick.ref{border-style:dashed;}
+.octave-tick.hit{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--accent-ink);
+  font-weight:700;
+}
+.octave-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  color:var(--ink-dim);
+}
+.octave-label strong{color:var(--accent);font-weight:700;}
+
 .unlock-toast{
   margin-top:6px;
   text-align:center;
@@ -387,6 +424,7 @@ section.panel.active{display:block;}
         <button class="replay-link" id="noteReplay" hidden>Replay tones</button>
         <div class="answer-grid idle" id="noteButtons"></div>
         <div class="feedback" id="noteFeedback"></div>
+        <div class="octave-indicator" id="noteOctaveInfo" hidden></div>
         <div class="unlock-toast" id="noteUnlockToast"></div>
       </div>
     </div>
@@ -591,6 +629,7 @@ section.panel.active{display:block;}
   var anchorSwitch = document.getElementById("anchorSwitch");
   var anchorLabel = document.getElementById("anchorLabel");
   var noteUnlockToast = document.getElementById("noteUnlockToast");
+  var noteOctaveInfoEl = document.getElementById("noteOctaveInfo");
 
   function buildNoteButtons(){
     noteButtonsEl.innerHTML = "";
@@ -613,18 +652,19 @@ section.panel.active{display:block;}
   function playNoteRound(){
     var pool = state.noteMode.unlocked;
     var target = weightedPick(pool, state.noteMode.stats);
-    noteRound = {target: target};
     noteAnswered = false;
     noteButtonsEl.classList.remove("locked","idle");
     setNotePlayIcon(false);
     noteFeedbackEl.textContent = "";
     noteFeedbackEl.className = "feedback";
+    noteOctaveInfoEl.hidden = true;
     noteUnlockToast.textContent = "";
     Array.prototype.forEach.call(noteButtonsEl.children, function(b){
       b.classList.remove("correct","wrong","reveal");
     });
     var range = state.noteMode.octaveRange; // widens as notes get mastered — starts at ±1 octave
     var octaveOffset = Math.floor(Math.random()*(2*range+1)) - range;
+    noteRound = {target: target, octaveOffset: octaveOffset, range: range};
     var freq = freqFor(SEMITONE[target] + 12*octaveOffset);
     if(state.noteMode.anchorOn){
       tone(freqFor(0), 0, 0.75);
@@ -663,6 +703,7 @@ section.panel.active{display:block;}
     noteFeedbackEl.textContent = correct
       ? "Correct — that was " + NOTE_LABEL[target]
       : "That was " + NOTE_LABEL[target] + " — you guessed " + NOTE_LABEL[guess];
+    renderOctaveIndicator(noteRound.octaveOffset, noteRound.range);
 
     var unlocked = maybeUnlock(NOTE_ORDER, state.noteMode, function(k){return ensureNoteStat(k);}, 8);
     if(unlocked){
@@ -676,6 +717,24 @@ section.panel.active{display:block;}
     noteRound = null;
     noteHintEl.textContent = "Click next to hear the next note";
     setNotePlayIcon(true);
+  }
+
+  function renderOctaveIndicator(offset, range){
+    var ticks = [];
+    for(var i=-range;i<=range;i++){
+      var isRef = i===0;
+      var isHit = i===offset;
+      var cls = "octave-tick" + (isRef?" ref":"") + (isHit?" hit":"");
+      var label = isRef ? "0" : (i>0?"+"+i:i);
+      ticks.push('<div class="'+cls+'">'+label+'</div>');
+    }
+    var desc = offset===0
+      ? "Same octave as the reference"
+      : Math.abs(offset)+" octave"+(Math.abs(offset)>1?"s":"")+" "+(offset>0?"above":"below")+" the reference";
+    noteOctaveInfoEl.innerHTML =
+      '<div class="octave-ruler">'+ticks.join("")+'</div>'+
+      '<div class="octave-label"><strong>'+ (offset>0?"↑":offset<0?"↓":"–") +'</strong> '+desc+'</div>';
+    noteOctaveInfoEl.hidden = false;
   }
 
   function setNotePlayIcon(isNext){
