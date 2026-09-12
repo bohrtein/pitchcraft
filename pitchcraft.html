@@ -422,12 +422,12 @@ section.panel.active{display:block;}
         <div class="play-hint" id="noteHint">Press play to hear a note</div>
         <button class="replay-link" id="noteReplay" hidden>Replay tones</button>
         <div class="answer-section">
-          <div class="answer-label">Octave</div>
-          <div class="answer-grid octave-picker idle" id="noteOctaveButtons"></div>
-        </div>
-        <div class="answer-section">
           <div class="answer-label">Note</div>
           <div class="answer-grid idle" id="noteButtons"></div>
+        </div>
+        <div class="answer-section">
+          <div class="answer-label">Octave</div>
+          <div class="answer-grid octave-picker idle" id="noteOctaveButtons"></div>
         </div>
         <div class="feedback" id="noteFeedback"></div>
         <div class="unlock-toast" id="noteUnlockToast"></div>
@@ -656,17 +656,18 @@ section.panel.active{display:block;}
   }
 
   function octaveDesc(off){
+    if(off===null) return "no octave picked";
     return off===0 ? "the reference octave" : (Math.abs(off)+" octave"+(Math.abs(off)>1?"s":"")+" "+(off>0?"above":"below"));
   }
 
   function buildOctaveButtons(){
     var range = state.noteMode.octaveRange;
-    selectedOctave = 0;
+    selectedOctave = null;
     noteOctaveButtonsEl.innerHTML = "";
     for(var i=-range;i<=range;i++){
       (function(off){
         var btn = document.createElement("button");
-        btn.className = "octave-tick" + (off===0?" ref selected":"");
+        btn.className = "octave-tick" + (off===0?" ref":"");
         btn.dataset.off = off;
         btn.textContent = off===0 ? "0" : (off>0?"+"+off:String(off));
         btn.addEventListener("click", function(){
