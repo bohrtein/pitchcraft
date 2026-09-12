@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pitchcraft</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#E3E7E6;
+  --surface:#F3F5F4;
+  --surface-2:#FFFFFF;
+  --ink:#1B2427;
+  --ink-dim:#57666A;
+  --accent:#A9752F;
+  --accent-soft:#E7D3AE;
+  --accent-ink:#3D2C10;
+  --good:#3F7A5C;
+  --good-soft:#D9EAE0;
+  --bad:#B1503A;
+  --bad-soft:#F3DDD6;
+  --border:rgba(27,36,39,0.13);
+  --shadow:rgba(27,36,39,0.10);
+  --lock:rgba(27,36,39,0.22);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12181A;
+    --surface:#1A2225;
+    --surface-2:#202A2D;
+    --ink:#E7ECEC;
+    --ink-dim:#94A3A6;
+    --accent:#D9A455;
+    --accent-soft:#3B2E17;
+    --accent-ink:#2A1D0B;
+    --good:#6FB08A;
+    --good-soft:#1E332A;
+    --bad:#D4795F;
+    --bad-soft:#3A2420;
+    --border:rgba(231,236,236,0.14);
+    --shadow:rgba(0,0,0,0.4);
+    --lock:rgba(231,236,236,0.18);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12181A;
+  --surface:#1A2225;
+  --surface-2:#202A2D;
+  --ink:#E7ECEC;
+  --ink-dim:#94A3A6;
+  --accent:#D9A455;
+  --accent-soft:#3B2E17;
+  --accent-ink:#2A1D0B;
+  --good:#6FB08A;
+  --good-soft:#1E332A;
+  --bad:#D4795F;
+  --bad-soft:#3A2420;
+  --border:rgba(231,236,236,0.14);
+  --shadow:rgba(0,0,0,0.4);
+  --lock:rgba(231,236,236,0.18);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Karla',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:920px;
+  margin:0 auto;
+  padding:28px 20px 80px;
+}
+header.top{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:22px;
+  flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand svg{flex:none;}
+h1{
+  font-family:'Fraunces',serif;
+  font-optical-sizing:auto;
+  font-weight:600;
+  font-size:32px;
+  margin:0;
+  letter-spacing:-0.01em;
+  text-wrap:balance;
+}
+.tagline{
+  margin:2px 0 0;
+  color:var(--ink-dim);
+  font-size:13.5px;
+}
+nav.tabs{
+  display:flex;
+  gap:6px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:4px;
+}
+nav.tabs button{
+  font-family:'Karla',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  letter-spacing:0.02em;
+  text-transform:uppercase;
+  color:var(--ink-dim);
+  background:transparent;
+  border:none;
+  padding:9px 14px;
+  border-radius:9px;
+  cursor:pointer;
+}
+nav.tabs button.active{
+  background:var(--surface-2);
+  color:var(--ink);
+  box-shadow:0 1px 2px var(--shadow);
+}
+section.panel{display:none;}
+section.panel.active{display:block;}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 1px 3px var(--shadow);
+}
+.deck-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+.mode-toggle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:13px;
+  color:var(--ink-dim);
+}
+.switch{
+  position:relative;
+  width:38px;height:22px;
+  background:var(--border);
+  border-radius:20px;
+  cursor:pointer;
+  flex:none;
+  transition:background .15s;
+}
+.switch.on{background:var(--accent);}
+.switch::after{
+  content:"";
+  position:absolute;
+  top:2px;left:2px;
+  width:18px;height:18px;
+  background:var(--surface-2);
+  border-radius:50%;
+  transition:transform .15s;
+  box-shadow:0 1px 2px var(--shadow);
+}
+.switch.on::after{transform:translateX(16px);}
+
+.progress-line{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  color:var(--ink-dim);
+}
+.bar-track{
+  width:120px;height:6px;border-radius:4px;
+  background:var(--border);
+  overflow:hidden;
+}
+.bar-fill{height:100%;background:var(--accent);border-radius:4px;}
+
+.play-area{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+  padding:26px 10px 30px;
+}
+.play-btn{
+  width:104px;height:104px;
+  border-radius:50%;
+  border:none;
+  background:var(--accent);
+  color:var(--accent-ink);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px -6px var(--shadow), inset 0 0 0 6px rgba(255,255,255,0.15);
+  transition:transform .1s;
+}
+.play-btn:active{transform:scale(0.95);}
+.play-btn svg{width:38px;height:38px;}
+.play-hint{
+  font-size:12.5px;
+  color:var(--ink-dim);
+  font-family:'IBM Plex Mono',monospace;
+  min-height:16px;
+}
+.replay-link{
+  background:none;border:none;
+  color:var(--accent);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  cursor:pointer;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  padding:0;
+}
+
+.answer-grid{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+  margin-top:4px;
+}
+.answer-grid.locked{pointer-events:none;}
+.answer-grid.idle{pointer-events:none;opacity:0.5;}
+.note-btn{
+  min-width:52px;
+  padding:12px 6px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--ink);
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
+  position:relative;
+  transition:background .1s, border-color .1s;
+}
+.note-btn:hover:not(:disabled){border-color:var(--accent);}
+.note-btn:disabled{
+  cursor:default;
+  color:var(--lock);
+  border-style:dashed;
+}
+.note-btn:disabled svg{display:block;margin:0 auto 2px;opacity:.55;}
+.note-btn.correct{background:var(--good-soft);border-color:var(--good);color:var(--good);}
+.note-btn.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);}
+.note-btn.reveal{outline:2px solid var(--good);outline-offset:1px;}
+.interval-btn{min-width:auto;padding:12px 14px;font-family:'Karla',sans-serif;font-weight:600;font-size:13px;}
+
+.feedback{
+  min-height:22px;
+  font-size:14px;
+  text-align:center;
+  color:var(--ink-dim);
+}
+.feedback.good{color:var(--good);}
+.feedback.bad{color:var(--bad);}
+
+.unlock-toast{
+  margin-top:6px;
+  text-align:center;
+  font-family:'Fraunces',serif;
+  font-size:15px;
+  color:var(--accent);
+}
+
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+  gap:12px;
+  margin-bottom:20px;
+}
+.stat-tile{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px 16px 14px;
+}
+.stat-tile .num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:26px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+  display:block;
+}
+.stat-tile .lbl{
+  font-size:11.5px;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  color:var(--ink-dim);
+}
+.section-title{
+  font-family:'Fraunces',serif;
+  font-size:18px;
+  font-weight:600;
+  margin:28px 0 12px;
+}
+.section-title:first-of-type{margin-top:0;}
+.subnote{font-size:12.5px;color:var(--ink-dim);margin:-8px 0 14px;}
+
+.trend-wrap, .matrix-wrap{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px 18px 10px;
+  overflow-x:auto;
+}
+.note-acc-list{display:flex;flex-direction:column;gap:8px;}
+.note-acc-row{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+.note-acc-row .nm{width:34px;flex:none;color:var(--ink-dim);}
+.note-acc-row .track{flex:1;height:8px;border-radius:4px;background:var(--border);overflow:hidden;}
+.note-acc-row .fill{height:100%;border-radius:4px;}
+.note-acc-row .pct{width:38px;text-align:right;flex:none;}
+
+.settings-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0;border-top:1px solid var(--border);
+  font-size:13.5px;flex-wrap:wrap;gap:8px;
+}
+.settings-row:first-child{border-top:none;}
+.danger-btn{
+  background:var(--bad-soft);color:var(--bad);
+  border:1px solid var(--bad);
+  border-radius:9px;padding:8px 14px;
+  font-family:'Karla',sans-serif;font-weight:600;font-size:12.5px;
+  cursor:pointer;
+}
+.save-note{font-size:11.5px;color:var(--ink-dim);text-align:center;margin-top:16px;font-family:'IBM Plex Mono',monospace;}
+
+@media (max-width:520px){
+  h1{font-size:26px;}
+  .play-btn{width:88px;height:88px;}
+  .note-btn{min-width:44px;padding:10px 4px;font-size:12.5px;}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+        <path d="M8 24V13a5 5 0 0 1 10 0v18M22 24V13a5 5 0 0 1 10 0v18" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M13 31v3M27 31v3" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Pitchcraft</h1>
+        <p class="tagline">Ear training for pinpointing pitch, one note at a time</p>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button data-tab="train" class="active">Notes</button>
+      <button data-tab="interval">Intervals</button>
+      <button data-tab="stats">Progress</button>
+      <button data-tab="settings">Settings</button>
+    </nav>
+  </header>
+
+  <section class="panel active" id="panel-train">
+    <div class="card">
+      <div class="deck-top">
+        <div class="mode-toggle">
+          <div class="switch on" id="anchorSwitch"></div>
+          <span id="anchorLabel">Play reference note (C4) first</span>
+        </div>
+        <div class="progress-line">
+          <span id="noteUnlockLabel">2 / 12 notes</span>
+          <div class="bar-track"><div class="bar-fill" id="noteUnlockBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="play-area">
+        <button class="play-btn" id="notePlayBtn" aria-label="Play round">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 5v14l12-7L7 5z" fill="currentColor"/></svg>
+        </button>
+        <div class="play-hint" id="noteHint">Press play to hear a note</div>
+        <button class="replay-link" id="noteReplay" hidden>Replay tones</button>
+        <div class="answer-grid idle" id="noteButtons"></div>
+        <div class="feedback" id="noteFeedback"></div>
+        <div class="unlock-toast" id="noteUnlockToast"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-interval">
+    <div class="card">
+      <div class="deck-top">
+        <div class="mode-toggle">
+          <span style="color:var(--ink-dim);font-size:13px;">Root note is randomized every round — you're listening for the gap, not the pitch.</span>
+        </div>
+        <div class="progress-line">
+          <span id="intUnlockLabel">2 / 12 intervals</span>
+          <div class="bar-track"><div class="bar-fill" id="intUnlockBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="play-area">
+        <button class="play-btn" id="intPlayBtn" aria-label="Play round">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 5v14l12-7L7 5z" fill="currentColor"/></svg>
+        </button>
+        <div class="play-hint" id="intHint">Press play to hear two notes</div>
+        <button class="replay-link" id="intReplay" hidden>Replay tones</button>
+        <div class="answer-grid idle" id="intButtons"></div>
+        <div class="feedback" id="intFeedback"></div>
+        <div class="unlock-toast" id="intUnlockToast"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-stats">
+    <div class="stat-grid" id="statTiles"></div>
+
+    <div class="section-title">Accuracy, last 14 active days</div>
+    <div class="trend-wrap"><svg id="trendSvg" width="100%" height="120"></svg></div>
+
+    <div class="section-title">Note confusion matrix</div>
+    <p class="subnote">Rows are the note that played, columns are what you guessed. Darker off-diagonal cells are your mix-ups.</p>
+    <div class="matrix-wrap"><svg id="matrixSvg"></svg></div>
+
+    <div class="section-title">Per-note accuracy</div>
+    <div class="note-acc-list" id="noteAccList"></div>
+  </section>
+
+  <section class="panel" id="panel-settings">
+    <div class="card">
+      <div class="section-title" style="margin-top:0;">Settings</div>
+      <div class="settings-row">
+        <span>Storage</span>
+        <span id="storageStatus" style="color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:12px;">checking…</span>
+      </div>
+      <div class="settings-row">
+        <span>Reset all progress</span>
+        <button class="danger-btn" id="resetBtn">Reset progress</button>
+      </div>
+    </div>
+    <p class="save-note" id="saveNote"></p>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var NOTE_ORDER = ["C","G","E","F","A","D","B","F#","C#","G#","D#","A#"];
+  var SEMITONE = {C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
+  var NOTE_LABEL = {C:"C","C#":"C♯",D:"D","D#":"D♯",E:"E",F:"F","F#":"F♯",G:"G","G#":"G♯",A:"A","A#":"A♯",B:"B"};
+  var ALL_NOTES_DISPLAY = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+  var INTERVAL_ORDER = ["P5","P4","P8","M3","M6","m3","m6","M2","m7","M7","TT","m2"];
+  var INTERVAL_INFO = {
+    m2:{name:"Minor 2nd",semi:1}, M2:{name:"Major 2nd",semi:2},
+    m3:{name:"Minor 3rd",semi:3}, M3:{name:"Major 3rd",semi:4},
+    P4:{name:"Perfect 4th",semi:5}, TT:{name:"Tritone",semi:6},
+    P5:{name:"Perfect 5th",semi:7}, m6:{name:"Minor 6th",semi:8},
+    M6:{name:"Major 6th",semi:9}, m7:{name:"Minor 7th",semi:10},
+    M7:{name:"Major 7th",semi:11}, P8:{name:"Octave",semi:12}
+  };
+
+  var C4 = 261.6256;
+  function freqFor(semitoneFromC4){ return C4 * Math.pow(2, semitoneFromC4/12); }
+
+  var MAX_OCTAVE_RANGE = 3;
+
+  function defaultState(){
+    return {
+      version:1,
+      noteMode:{ unlocked: NOTE_ORDER.slice(0,2), anchorOn:true, octaveRange:1, stats:{} },
+      intervalMode:{ unlocked: INTERVAL_ORDER.slice(0,2), stats:{} },
+      sessions:{},
+      totals:{attempts:0, correct:0},
+      updatedAt:0
+    };
+  }
+
+  var state = defaultState();
+  var storageMode = "checking";
+
+  function ensureNoteStat(note){
+    var s = state.noteMode.stats;
+    if(!s[note]) s[note] = {attempts:0, correct:0, recent:[], confusions:{}};
+    return s[note];
+  }
+  function ensureIntStat(iv){
+    var s = state.intervalMode.stats;
+    if(!s[iv]) s[iv] = {attempts:0, correct:0, recent:[], confusions:{}};
+    return s[iv];
+  }
+  function recentAcc(stat){
+    if(!stat.recent.length) return null;
+    var c = 0;
+    for(var i=0;i<stat.recent.length;i++) if(stat.recent[i]) c++;
+    return c/stat.recent.length;
+  }
+  function pushResult(stat, guess, actualKey, correct){
+    stat.attempts++;
+    if(correct) stat.correct++;
+    stat.recent.push(correct);
+    if(stat.recent.length>20) stat.recent.shift();
+    stat.confusions[guess] = (stat.confusions[guess]||0)+1;
+  }
+  function todayKey(){
+    var d = new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  function bumpSession(correct){
+    var k = todayKey();
+    if(!state.sessions[k]) state.sessions[k] = {attempts:0, correct:0};
+    state.sessions[k].attempts++;
+    if(correct) state.sessions[k].correct++;
+    var keys = Object.keys(state.sessions).sort();
+    if(keys.length>60){
+      var toDrop = keys.slice(0, keys.length-60);
+      toDrop.forEach(function(k2){ delete state.sessions[k2]; });
+    }
+  }
+
+  function weightedPick(pool, statsMap){
+    var weights = pool.map(function(k){
+      var st = statsMap[k];
+      var acc = st ? recentAcc(st) : null;
+      if(acc===null) acc = 0.4;
+      return Math.max(0.12, 1 - acc) + 0.08;
+    });
+    var total = weights.reduce(function(a,b){return a+b;},0);
+    var r = Math.random()*total;
+    for(var i=0;i<pool.length;i++){
+      r -= weights[i];
+      if(r<=0) return pool[i];
+    }
+    return pool[pool.length-1];
+  }
+
+  function isMastered(pool, statsGetter, minAttempts){
+    return pool.every(function(k){
+      var st = statsGetter(k);
+      if(st.attempts < minAttempts) return false;
+      var a = recentAcc(st);
+      return a !== null && a >= 0.85;
+    });
+  }
+  function maybeUnlock(orderArr, modeState, statsGetter, minAttempts){
+    if(modeState.unlocked.length >= orderArr.length) return null;
+    if(!isMastered(modeState.unlocked, statsGetter, minAttempts)) return null;
+    var next = orderArr[modeState.unlocked.length];
+    modeState.unlocked.push(next);
+    return next;
+  }
+
+  // ---------- Audio ----------
+  var actx = null;
+  function ctx(){
+    if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state === "suspended") actx.resume();
+    return actx;
+  }
+  function tone(freq, startDelay, dur){
+    var c = ctx();
+    var t0 = c.currentTime + startDelay;
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(0.28, t0+0.02);
+    gain.gain.setValueAtTime(0.28, t0+dur-0.09);
+    gain.gain.linearRampToValueAtTime(0, t0+dur);
+    osc.connect(gain).connect(c.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
+  }
+
+  // ---------- Note mode ----------
+  var noteRound = null; // {target}
+  var noteAnswered = false;
+  var lastNoteFreqs = null;
+
+  var notePlayBtn = document.getElementById("notePlayBtn");
+  var noteButtonsEl = document.getElementById("noteButtons");
+  var noteFeedbackEl = document.getElementById("noteFeedback");
+  var noteHintEl = document.getElementById("noteHint");
+  var noteReplayBtn = document.getElementById("noteReplay");
+  var anchorSwitch = document.getElementById("anchorSwitch");
+  var anchorLabel = document.getElementById("anchorLabel");
+  var noteUnlockToast = document.getElementById("noteUnlockToast");
+
+  function buildNoteButtons(){
+    noteButtonsEl.innerHTML = "";
+    ALL_NOTES_DISPLAY.forEach(function(note){
+      var btn = document.createElement("button");
+      btn.className = "note-btn";
+      btn.dataset.note = note;
+      var unlocked = state.noteMode.unlocked.indexOf(note) !== -1;
+      if(unlocked){
+        btn.textContent = NOTE_LABEL[note];
+      } else {
+        btn.disabled = true;
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>' + NOTE_LABEL[note];
+      }
+      btn.addEventListener("click", function(){ onNoteGuess(note); });
+      noteButtonsEl.appendChild(btn);
+    });
+  }
+
+  function playNoteRound(){
+    var pool = state.noteMode.unlocked;
+    var target = weightedPick(pool, state.noteMode.stats);
+    noteRound = {target: target};
+    noteAnswered = false;
+    noteButtonsEl.classList.remove("locked","idle");
+    noteFeedbackEl.textContent = "";
+    noteFeedbackEl.className = "feedback";
+    noteUnlockToast.textContent = "";
+    Array.prototype.forEach.call(noteButtonsEl.children, function(b){
+      b.classList.remove("correct","wrong","reveal");
+    });
+    var range = state.noteMode.octaveRange; // widens as notes get mastered — starts at ±1 octave
+    var octaveOffset = Math.floor(Math.random()*(2*range+1)) - range;
+    var freq = freqFor(SEMITONE[target] + 12*octaveOffset);
+    if(state.noteMode.anchorOn){
+      tone(freqFor(0), 0, 0.75);
+      tone(freq, 0.95, 0.9);
+      lastNoteFreqs = [{f:freqFor(0),d:0,dur:0.75},{f:freq,d:0.95,dur:0.9}];
+      noteHintEl.textContent = "Reference C, then the note to identify";
+    } else {
+      tone(freq, 0, 0.9);
+      lastNoteFreqs = [{f:freq,d:0,dur:0.9}];
+      noteHintEl.textContent = "Identify the note";
+    }
+    noteReplayBtn.hidden = false;
+  }
+  function replayNote(){
+    if(!lastNoteFreqs) return;
+    lastNoteFreqs.forEach(function(t){ tone(t.f, t.d, t.dur); });
+  }
+
+  function onNoteGuess(guess){
+    if(!noteRound || noteAnswered){ playNoteRound(); return; }
+    noteAnswered = true;
+    noteButtonsEl.classList.add("locked");
+    var target = noteRound.target;
+    var correct = guess === target;
+    var stat = ensureNoteStat(target);
+    pushResult(stat, guess, target, correct);
+    state.totals.attempts++;
+    if(correct) state.totals.correct++;
+    bumpSession(correct);
+
+    Array.prototype.forEach.call(noteButtonsEl.children, function(b){
+      if(b.dataset.note === guess) b.classList.add(correct?"correct":"wrong");
+      if(b.dataset.note === target) b.classList.add("reveal");
+    });
+    noteFeedbackEl.className = "feedback " + (correct?"good":"bad");
+    noteFeedbackEl.textContent = correct
+      ? "Correct — that was " + NOTE_LABEL[target]
+      : "That was " + NOTE_LABEL[target] + " — you guessed " + NOTE_LABEL[guess];
+
+    var unlocked = maybeUnlock(NOTE_ORDER, state.noteMode, function(k){return ensureNoteStat(k);}, 8);
+    if(unlocked){
+      if(state.noteMode.octaveRange < MAX_OCTAVE_RANGE) state.noteMode.octaveRange++;
+      noteUnlockToast.textContent = "New note unlocked: " + NOTE_LABEL[unlocked] +
+        (state.noteMode.octaveRange>1 ? " — registers widen too" : "");
+      buildNoteButtons();
+    }
+    updateNoteProgress();
+    persist();
+    setTimeout(armNoteIdle, 1800);
+  }
+
+  function armNoteIdle(){
+    noteRound = null;
+    noteAnswered = false;
+    noteButtonsEl.classList.remove("locked");
+    noteButtonsEl.classList.add("idle");
+    noteHintEl.textContent = "Press play for the next note";
+  }
+
+  function updateNoteProgress(){
+    document.getElementById("noteUnlockLabel").textContent = state.noteMode.unlocked.length + " / " + NOTE_ORDER.length + " notes";
+    document.getElementById("noteUnlockBar").style.width = (state.noteMode.unlocked.length/NOTE_ORDER.length*100) + "%";
+  }
+
+  notePlayBtn.addEventListener("click", playNoteRound);
+  noteReplayBtn.addEventListener("click", replayNote);
+  anchorSwitch.addEventListener("click", function(){
+    state.noteMode.anchorOn = !state.noteMode.anchorOn;
+    anchorSwitch.classList.toggle("on", state.noteMode.anchorOn);
+    anchorLabel.textContent = state.noteMode.anchorOn ? "Play reference note (C4) first" : "Cold pitch — no reference note";
+    persist();
+  });
+
+  // ---------- Interval mode ----------
+  var intRound = null;
+  var intAnswered = false;
+  var lastIntFreqs = null;
+
+  var intPlayBtn = document.getElementById("intPlayBtn");
+  var intButtonsEl = document.getElementById("intButtons");
+  var intFeedbackEl = document.getElementById("intFeedback");
+  var intHintEl = document.getElementById("intHint");
+  var intReplayBtn = document.getElementById("intReplay");
+  var intUnlockToast = document.getElementById("intUnlockToast");
+
+  function buildIntButtons(){
+    intButtonsEl.innerHTML = "";
+    INTERVAL_ORDER.forEach(function(iv){
+      var btn = document.createElement("button");
+      btn.className = "note-btn interval-btn";
+      btn.dataset.iv = iv;
+      var unlocked = state.intervalMode.unlocked.indexOf(iv) !== -1;
+      if(unlocked){
+        btn.textContent = INTERVAL_INFO[iv].name;
+      } else {
+        btn.disabled = true;
+        btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px;margin-right:4px;"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>' + INTERVAL_INFO[iv].name;
+      }
+      btn.addEventListener("click", function(){ onIntGuess(iv); });
+      intButtonsEl.appendChild(btn);
+    });
+  }
+
+  function playIntRound(){
+    var pool = state.intervalMode.unlocked;
+    var target = weightedPick(pool, state.intervalMode.stats);
+    var rootSemi = Math.floor(Math.random()*12) + (Math.floor(Math.random()*3)-1)*12;
+    var rootFreq = freqFor(rootSemi);
+    var targetFreq = freqFor(rootSemi + INTERVAL_INFO[target].semi);
+    intRound = {target: target};
+    intAnswered = false;
+    intButtonsEl.classList.remove("locked","idle");
+    intFeedbackEl.textContent = "";
+    intFeedbackEl.className = "feedback";
+    intUnlockToast.textContent = "";
+    Array.prototype.forEach.call(intButtonsEl.children, function(b){
+      b.classList.remove("correct","wrong","reveal");
+    });
+    tone(rootFreq, 0, 0.75);
+    tone(targetFreq, 0.85, 0.9);
+    lastIntFreqs = [{f:rootFreq,d:0,dur:0.75},{f:targetFreq,d:0.85,dur:0.9}];
+    intHintEl.textContent = "Two notes, root then interval";
+    intReplayBtn.hidden = false;
+  }
+  function replayInt(){
+    if(!lastIntFreqs) return;
+    lastIntFreqs.forEach(function(t){ tone(t.f, t.d, t.dur); });
+  }
+
+  function onIntGuess(guess){
+    if(!intRound || intAnswered){ playIntRound(); return; }
+    intAnswered = true;
+    intButtonsEl.classList.add("locked");
+    var target = intRound.target;
+    var correct = guess === target;
+    var stat = ensureIntStat(target);
+    pushResult(stat, guess, target, correct);
+    state.totals.attempts++;
+    if(correct) state.totals.correct++;
+    bumpSession(correct);
+
+    Array.prototype.forEach.call(intButtonsEl.children, function(b){
+      if(b.dataset.iv === guess) b.classList.add(correct?"correct":"wrong");
+      if(b.dataset.iv === target) b.classList.add("reveal");
+    });
+    intFeedbackEl.className = "feedback " + (correct?"good":"bad");
+    intFeedbackEl.textContent = correct
+      ? "Correct — that was a " + INTERVAL_INFO[target].name
+      : "That was a " + INTERVAL_INFO[target].name + " — you guessed " + INTERVAL_INFO[guess].name;
+
+    var unlocked = maybeUnlock(INTERVAL_ORDER, state.intervalMode, function(k){return ensureIntStat(k);}, 8);
+    if(unlocked){
+      intUnlockToast.textContent = "New interval unlocked: " + INTERVAL_INFO[unlocked].name;
+      buildIntButtons();
+    }
+    updateIntProgress();
+    persist();
+    setTimeout(armIntIdle, 1800);
+  }
+
+  function armIntIdle(){
+    intRound = null;
+    intAnswered = false;
+    intButtonsEl.classList.remove("locked");
+    intButtonsEl.classList.add("idle");
+    intHintEl.textContent = "Press play for the next pair";
+  }
+
+  function updateIntProgress(){
+    document.getElementById("intUnlockLabel").textContent = state.intervalMode.unlocked.length + " / " + INTERVAL_ORDER.length + " intervals";
+    document.getElementById("intUnlockBar").style.width = (state.intervalMode.unlocked.length/INTERVAL_ORDER.length*100) + "%";
+  }
+
+  intPlayBtn.addEventListener("click", playIntRound);
+  intReplayBtn.addEventListener("click", replayInt);
+
+  // ---------- Tabs ----------
+  var tabBtns = document.querySelectorAll("nav.tabs button");
+  tabBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      tabBtns.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll("section.panel").forEach(function(p){ p.classList.remove("active"); });
+      document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab === "stats") renderStats();
+    });
+  });
+
+  // ---------- Stats rendering ----------
+  function pct(n){ return Math.round(n*100)+"%"; }
+
+  function renderStatTiles(){
+    var overallAcc = state.totals.attempts ? state.totals.correct/state.totals.attempts : 0;
+    var todayS = state.sessions[todayKey()];
+    var todayAcc = todayS && todayS.attempts ? todayS.correct/todayS.attempts : null;
+    var tiles = [
+      {num: state.totals.attempts, lbl:"Total rounds"},
+      {num: pct(overallAcc), lbl:"Overall accuracy"},
+      {num: todayAcc===null ? "—" : pct(todayAcc), lbl:"Today's accuracy"},
+      {num: state.noteMode.unlocked.length+"/"+NOTE_ORDER.length, lbl:"Notes unlocked"},
+      {num: state.intervalMode.unlocked.length+"/"+INTERVAL_ORDER.length, lbl:"Intervals unlocked"}
+    ];
+    var el = document.getElementById("statTiles");
+    el.innerHTML = tiles.map(function(t){
+      return '<div class="stat-tile"><span class="num">'+t.num+'</span><span class="lbl">'+t.lbl+'</span></div>';
+    }).join("");
+  }
+
+  function renderTrend(){
+    var days = Object.keys(state.sessions).sort().slice(-14);
+    var svg = document.getElementById("trendSvg");
+    var w = Math.max(320, days.length*46);
+    var h = 120;
+    svg.setAttribute("viewBox","0 0 "+w+" "+h);
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    if(!days.length){
+      svg.innerHTML = '<text x="10" y="60" fill="var(--ink-dim)" font-family="IBM Plex Mono" font-size="12">No sessions yet — play a few rounds.</text>';
+      return;
+    }
+    var barW = 22;
+    var gap = (w - days.length*barW) / (days.length+1);
+    var baseY = h-22;
+    var maxH = 70;
+    var parts = [];
+    days.forEach(function(day, i){
+      var s = state.sessions[day];
+      var acc = s.attempts ? s.correct/s.attempts : 0;
+      var x = gap + i*(barW+gap);
+      var barH = Math.max(3, acc*maxH);
+      var color = acc>=0.8 ? "var(--good)" : (acc>=0.5 ? "var(--accent)" : "var(--bad)");
+      parts.push('<rect x="'+x+'" y="'+(baseY-barH)+'" width="'+barW+'" height="'+barH+'" rx="3" fill="'+color+'"></rect>');
+      parts.push('<text x="'+(x+barW/2)+'" y="'+(baseY+14)+'" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">'+day.slice(5)+'</text>');
+      parts.push('<text x="'+(x+barW/2)+'" y="'+(baseY-barH-4)+'" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-dim)">'+Math.round(acc*100)+'</text>');
+    });
+    svg.innerHTML = parts.join("");
+  }
+
+  function renderMatrix(){
+    var notes = state.noteMode.unlocked;
+    var svg = document.getElementById("matrixSvg");
+    var cell = 34, labelW = 46, labelH = 26;
+    var size = notes.length;
+    var w = labelW + size*cell + 10;
+    var h = labelH + size*cell + 10;
+    svg.setAttribute("viewBox","0 0 "+w+" "+h);
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    if(size < 2){
+      svg.innerHTML = '<text x="10" y="30" fill="var(--ink-dim)" font-family="IBM Plex Mono" font-size="12">Unlock a second note to see confusions.</text>';
+      return;
+    }
+    var max = 1;
+    notes.forEach(function(n){
+      var st = ensureNoteStat(n);
+      notes.forEach(function(g){ max = Math.max(max, st.confusions[g]||0); });
+    });
+    var parts = [];
+    notes.forEach(function(g,i){
+      parts.push('<text x="'+(labelW+i*cell+cell/2)+'" y="18" text-anchor="middle" font-family="IBM Plex Mono" font-size="11" fill="var(--ink-dim)">'+NOTE_LABEL[g]+'</text>');
+    });
+    notes.forEach(function(actual,row){
+      parts.push('<text x="'+(labelW-8)+'" y="'+(labelH+row*cell+cell/2+4)+'" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="var(--ink-dim)">'+NOTE_LABEL[actual]+'</text>');
+      var st = ensureNoteStat(actual);
+      notes.forEach(function(guess,col){
+        var v = st.confusions[guess]||0;
+        var isDiag = guess===actual;
+        var alpha = v ? (0.12 + 0.78*(v/max)) : 0.05;
+        var color = isDiag ? "var(--good)" : "var(--bad)";
+        var x = labelW + col*cell, y = labelH + row*cell;
+        parts.push('<rect x="'+x+'" y="'+y+'" width="'+(cell-3)+'" height="'+(cell-3)+'" rx="4" fill="'+color+'" opacity="'+alpha.toFixed(2)+'"></rect>');
+        if(v) parts.push('<text x="'+(x+(cell-3)/2)+'" y="'+(y+(cell-3)/2+4)+'" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="var(--ink)">'+v+'</text>');
+      });
+    });
+    svg.innerHTML = parts.join("");
+  }
+
+  function renderNoteAccList(){
+    var el = document.getElementById("noteAccList");
+    var notes = state.noteMode.unlocked;
+    if(!notes.length){ el.innerHTML=""; return; }
+    el.innerHTML = notes.map(function(n){
+      var st = ensureNoteStat(n);
+      var a = recentAcc(st);
+      var pctv = a===null ? 0 : a;
+      var color = pctv>=0.8 ? "var(--good)" : (pctv>=0.5 ? "var(--accent)" : "var(--bad)");
+      return '<div class="note-acc-row"><span class="nm">'+NOTE_LABEL[n]+'</span><div class="track"><div class="fill" style="width:'+(pctv*100)+'%;background:'+color+'"></div></div><span class="pct">'+(a===null?"—":Math.round(a*100)+"%")+'</span></div>';
+    }).join("");
+  }
+
+  function renderStats(){
+    renderStatTiles();
+    renderTrend();
+    renderMatrix();
+    renderNoteAccList();
+  }
+
+  // ---------- Persistence (browser-local, since this is a standalone file) ----------
+  var saveTimer = null;
+  function persist(){
+    state.updatedAt = Date.now();
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, 500);
+  }
+  function flushSave(){
+    try{ localStorage.setItem("pitchcraft.state", JSON.stringify(state)); }catch(e){}
+    document.getElementById("saveNote").textContent = "Last saved " + new Date().toLocaleTimeString();
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(!confirm("Reset all progress? This clears unlocked notes, intervals, and every stat.")) return;
+    state = defaultState();
+    buildNoteButtons();
+    buildIntButtons();
+    updateNoteProgress();
+    updateIntProgress();
+    renderStats();
+    persist();
+  });
+
+  function applyLoadedState(loaded){
+    if(!loaded) return;
+    state = Object.assign(defaultState(), loaded);
+    state.noteMode = Object.assign(defaultState().noteMode, loaded.noteMode||{});
+    state.intervalMode = Object.assign(defaultState().intervalMode, loaded.intervalMode||{});
+    state.sessions = loaded.sessions || {};
+    state.totals = loaded.totals || {attempts:0,correct:0};
+  }
+
+  function initUI(){
+    buildNoteButtons();
+    buildIntButtons();
+    updateNoteProgress();
+    updateIntProgress();
+    anchorSwitch.classList.toggle("on", state.noteMode.anchorOn);
+    anchorLabel.textContent = state.noteMode.anchorOn ? "Play reference note (C4) first" : "Cold pitch — no reference note";
+  }
+
+  function boot(){
+    try{
+      var raw = localStorage.getItem("pitchcraft.state");
+      if(raw) applyLoadedState(JSON.parse(raw));
+      storageMode = "local-only";
+    }catch(e){ storageMode = "local-only"; }
+    document.getElementById("storageStatus").textContent = "Saved on this computer (this browser only)";
+    initUI();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
