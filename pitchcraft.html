@@ -616,6 +616,7 @@ section.panel.active{display:block;}
     noteRound = {target: target};
     noteAnswered = false;
     noteButtonsEl.classList.remove("locked","idle");
+    setNotePlayIcon(false);
     noteFeedbackEl.textContent = "";
     noteFeedbackEl.className = "feedback";
     noteUnlockToast.textContent = "";
@@ -672,15 +673,16 @@ section.panel.active{display:block;}
     }
     updateNoteProgress();
     persist();
-    setTimeout(armNoteIdle, 1800);
+    noteRound = null;
+    noteHintEl.textContent = "Click next to hear the next note";
+    setNotePlayIcon(true);
   }
 
-  function armNoteIdle(){
-    noteRound = null;
-    noteAnswered = false;
-    noteButtonsEl.classList.remove("locked");
-    noteButtonsEl.classList.add("idle");
-    noteHintEl.textContent = "Press play for the next note";
+  function setNotePlayIcon(isNext){
+    notePlayBtn.innerHTML = isNext
+      ? '<svg viewBox="0 0 24 24" fill="none"><path d="M6 5v14l8-7-8-7z" fill="currentColor"/><rect x="16" y="5" width="2.4" height="14" rx="1" fill="currentColor"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none"><path d="M7 5v14l12-7L7 5z" fill="currentColor"/></svg>';
+    notePlayBtn.setAttribute("aria-label", isNext ? "Play next note" : "Play round");
   }
 
   function updateNoteProgress(){
@@ -736,6 +738,7 @@ section.panel.active{display:block;}
     intRound = {target: target};
     intAnswered = false;
     intButtonsEl.classList.remove("locked","idle");
+    setIntPlayIcon(false);
     intFeedbackEl.textContent = "";
     intFeedbackEl.className = "feedback";
     intUnlockToast.textContent = "";
@@ -781,15 +784,16 @@ section.panel.active{display:block;}
     }
     updateIntProgress();
     persist();
-    setTimeout(armIntIdle, 1800);
+    intRound = null;
+    intHintEl.textContent = "Click next to hear the next pair";
+    setIntPlayIcon(true);
   }
 
-  function armIntIdle(){
-    intRound = null;
-    intAnswered = false;
-    intButtonsEl.classList.remove("locked");
-    intButtonsEl.classList.add("idle");
-    intHintEl.textContent = "Press play for the next pair";
+  function setIntPlayIcon(isNext){
+    intPlayBtn.innerHTML = isNext
+      ? '<svg viewBox="0 0 24 24" fill="none"><path d="M6 5v14l8-7-8-7z" fill="currentColor"/><rect x="16" y="5" width="2.4" height="14" rx="1" fill="currentColor"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none"><path d="M7 5v14l12-7L7 5z" fill="currentColor"/></svg>';
+    intPlayBtn.setAttribute("aria-label", isNext ? "Play next pair" : "Play round");
   }
 
   function updateIntProgress(){
